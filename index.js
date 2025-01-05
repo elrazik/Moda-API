@@ -21,10 +21,10 @@ console.log("Request received:", req.body);
 
   try {
     const response = await axios.post(
-      "https://api.pixelcut.ai/try-on",
+      "https://api.developer.pixelcut.ai/v1/try-on",
       {
-        user_image: userImage, // Base64 string or URL of the user's image
-        clothing_image: clothingImage, // Base64 string or URL of the clothing image
+        person_image_url: userImage, // Base64 string or URL of the user's image
+        garment_image_url: clothingImage, // Base64 string or URL of the clothing image
       },
       {
         headers: {
