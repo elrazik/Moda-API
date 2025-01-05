@@ -9,41 +9,97 @@ const PORT = process.env.PORT || 8080;
 app.use(bodyParser.json());
 
 app.post("/api/try-on", async (req, res) => {
-console.log("Request received:", req.body);
+  console.log("Request received:", req.body);
   const { userImage, clothingImage } = req.body;
 
-    console.log('hello ')
+  console.log("hello ");
   if (!userImage || !clothingImage) {
     return res
       .status(400)
       .json({ error: "User image and clothing image are required." });
   }
+   let data = JSON.stringify({
+     person_image_url: userImage,
+     garment_image_url: clothingImage,
+   });
 
-  try {
-    const response = await axios.post(
-      "https://api.developer.pixelcut.ai/v1/try-on",
-      {
-        person_image_url: userImage, // Base64 string or URL of the user's image
-        garment_image_url: clothingImage, // Base64 string or URL of the clothing image
-      },
-      {
-        headers: {
-          // Authorization: `Bearer ${process.env.PIXELCUT_API_KEY}`,
-          // "Content-Type": "application/json",
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          "X-API-KEY": process.env.PIXELCUT_API_KEY,
-          ...data.getHeaders(),
-        },
-        
-      }
-    );
+   let config = {
+     method: "post",
+     maxBodyLength: Infinity,
+     url: "https://api.developer.pixelcut.ai/v1/try-on",
+     headers: {
+       "Content-Type": "application/json",
+       Accept: "application/json",
+       "X-API-KEY": process.env.PIXELCUT_API_KEY,
+       ...data.getHeaders(),
+     },
+     data: data,
+   };
+   axios
+     .request(config)
+     .then((response) => {
+       res.status(200).json({ result: response.data });
+       console.log(JSON.stringify(response.data));
+     })
+     .catch((error) => {
+       console.log(error);
+       res.status(500).json({ error: "Failed to process try-on request." });
+     });
 
-    res.status(200).json({ result: response.data });
-  } catch (error) {
-    console.error("Error with Pixelcut API:", error.message);
-    res.status(500).json({ error: "Failed to process try-on request." });
-  }
+  // try {
+  //   let data = JSON.stringify({
+  //     person_image_url: userImage,
+  //     garment_image_url: clothingImage,
+  //   });
+
+  //   let config = {
+  //     method: "post",
+  //     maxBodyLength: Infinity,
+  //     url: "https://api.developer.pixelcut.ai/v1/try-on",
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //       Accept: "application/json",
+  //       "X-API-KEY": process.env.PIXELCUT_API_KEY,
+  //       ...data.getHeaders(),
+  //     },
+  //     data: data,
+  //   };
+  //   axios
+  //     .request(config)
+  //     .then((response) => {
+  //       res.status(200).json({ result: response.data });
+  //       console.log(JSON.stringify(response.data));
+  //     })
+  //     .catch((error) => {
+  //       console.log(error);
+  //       res.status(500).json({ error: "Failed to process try-on request." });
+  //     });
+
+
+  //   // const response = await axios.post(
+  //   //   "https://api.developer.pixelcut.ai/v1/try-on",
+  //   //   {
+  //   //     person_image_url: userImage, // Base64 string or URL of the user's image
+  //   //     garment_image_url: clothingImage, // Base64 string or URL of the clothing image
+  //   //   },
+  //   //   {
+  //   //     headers: {
+  //   //       // Authorization: `Bearer ${process.env.PIXELCUT_API_KEY}`,
+  //   //       // "Content-Type": "application/json",
+  //   //       "Content-Type": "application/json",
+  //   //       Accept: "application/json",
+  //   //       "X-API-KEY": process.env.PIXELCUT_API_KEY,
+  //   //       ...data.getHeaders(),
+  //   //     },
+  //   //     data: data,
+  //   //   }
+  //   // );
+
+  //   // res.status(200).json({ result: response.data });
+  // } catch (error) {
+  //   console.error("Error with Pixelcut API:", error.message);
+  //   res.status(500).json({ error: "Failed to process try-on request." });
+  // }
 });
 
 app.listen(PORT, () => {
