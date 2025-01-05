@@ -31,7 +31,7 @@ app.post("/api/try-on", async (req, res) => {
        "Content-Type": "application/json",
        Accept: "application/json",
        "X-API-KEY": process.env.PIXELCUT_API_KEY,
-       ...data.getHeaders(),
+      //  ...data.getHeaders(),
      },
      data: data,
    };
