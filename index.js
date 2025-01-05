@@ -28,9 +28,14 @@ console.log("Request received:", req.body);
       },
       {
         headers: {
-          Authorization: `Bearer ${process.env.PIXELCUT_API_KEY}`,
+          // Authorization: `Bearer ${process.env.PIXELCUT_API_KEY}`,
+          // "Content-Type": "application/json",
           "Content-Type": "application/json",
+          Accept: "application/json",
+          "X-API-KEY": process.env.PIXELCUT_API_KEY,
+          ...data.getHeaders(),
         },
+        
       }
     );
 
