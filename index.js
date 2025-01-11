@@ -10,7 +10,7 @@ app.use(bodyParser.json());
 
 app.post("/api/try-on", async (req, res) => {
   console.log("Request received:", req.body);
-  const { userImage, clothingImage } = req.body;
+  const { userImage, clothingImage, category } = req.body;
 
   console.log("hello ");
   if (!userImage || !clothingImage) {
@@ -18,33 +18,53 @@ app.post("/api/try-on", async (req, res) => {
       .status(400)
       .json({ error: "User image and clothing image are required." });
   }
-   let data = JSON.stringify({
-     person_image_url: userImage,
-     garment_image_url: clothingImage,
-   });
 
-   let config = {
-     method: "post",
-     maxBodyLength: Infinity,
-     url: "https://api.developer.pixelcut.ai/v1/try-on",
-     headers: {
-       "Content-Type": "application/json",
-       Accept: "application/json",
-       "X-API-KEY": process.env.PIXELCUT_API_KEY,
+  // v1 endpoint
+  // let data = JSON.stringify({
+  //   person_image_url: userImage,
+  //   garment_image_url: clothingImage,
+  // });
+  //  let config = {
+  //    method: "post",
+  //    maxBodyLength: Infinity,
+  //    url: "https://api.developer.pixelcut.ai/v1/try-on",
+  //    headers: {
+  //      "Content-Type": "application/json",
+  //      Accept: "application/json",
+  //      "X-API-KEY": process.env.PIXELCUT_API_KEY,
+  //     //  ...data.getHeaders(),
+  //    },
+  //    data: data,
+  //  };
+
+  //v2 endpoint
+  let data = JSON.stringify({
+    model_image: userImage,
+    garment_image: clothingImage,
+    category: category
+  });
+  let config = {
+    method: "post",
+    maxBodyLength: Infinity,
+    url: "https://api.fashn.ai/v1/run",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      "X-API-KEY": `Bearer ${process.env.FASHION_AI_API} `,
       //  ...data.getHeaders(),
-     },
-     data: data,
-   };
-   axios
-     .request(config)
-     .then((response) => {
-       res.status(200).json({ result: response.data });
-       console.log(JSON.stringify(response.data));
-     })
-     .catch((error) => {
-       console.log(error);
-       res.status(500).json({ error: "Failed to process try-on request." });
-     });
+    },
+    data: data,
+  };
+  axios
+    .request(config)
+    .then((response) => {
+      res.status(200).json({ result: response.data });
+      console.log(JSON.stringify(response.data));
+    })
+    .catch((error) => {
+      console.log(error);
+      res.status(500).json({ error: "Failed to process try-on request." });
+    });
 
   // try {
   //   let data = JSON.stringify({
@@ -74,7 +94,6 @@ app.post("/api/try-on", async (req, res) => {
   //       console.log(error);
   //       res.status(500).json({ error: "Failed to process try-on request." });
   //     });
-
 
   //   // const response = await axios.post(
   //   //   "https://api.developer.pixelcut.ai/v1/try-on",
