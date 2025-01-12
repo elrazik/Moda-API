@@ -58,8 +58,8 @@ app.post("/api/try-on", async (req, res) => {
   axios
     .request(config)
     .then((response) => {
+      console.log(JSON.stringify(response));
       res.status(200).json({ result: response.data });
-      console.log(JSON.stringify(response.data));
     })
     .catch((error) => {
       console.log(error);
