@@ -6,12 +6,13 @@ app.use(express.json());
 
 // Utility function to handle API requests
 const handleApiRequest = async (config, res, successMessage) => {
+  console.log("helllooooooooooooo >>");
   try {
     const response = await axios.request(config);
-    console.log(successMessage, response.data);
+    console.log('fashion ai response ..', successMessage, response.data);
     return res.status(200).json({ result: response.data });
   } catch (error) {
-    console.error("API Request Error:", error.message);
+    console.error("API Request Error:", error);
     if (error.response) {
       console.error("Response Data:", error.response.data);
       console.error("Response Status:", error.response.status);
@@ -56,25 +57,58 @@ app.post("/api/try-on", async (req, res) => {
 });
 
 // Route 2: Fashion AI API
+// app.post("/api/fashion-ai", async (req, res) => {
+//   const { userImage, clothingImage, category } = req.body;
+//   console.log("Fashion AI Request Received:", req.body);
+
+//   // Validate required fields
+//   if (!userImage || !clothingImage || !category) {
+//     return res.status(400).json({
+//       error: "User image, clothing image, and category are required.",
+//     });
+//   }
+
+//   // Configuration for Fashion AI API
+//   const data = JSON.stringify({
+//     model_image: userImage,
+//     garment_image: clothingImage,
+//     category: category,
+//   });
+
+//   const config = {
+//     method: "post",
+//     maxBodyLength: Infinity,
+//     url: "https://api.fashn.ai/v1/run",
+//     headers: {
+//       "Content-Type": "application/json",
+//       Accept: "application/json",
+//       Authorization: `Bearer fa-TFLiAYCtn286-6sqfmFrekBX4o7Ailx1L7wry`,
+//     },
+//     data,
+//   };
+
+//   // Handle the request
+//   return handleApiRequest(config, res, "Fashion AI API Response:");
+// });
+
 app.post("/api/fashion-ai", async (req, res) => {
   const { userImage, clothingImage, category } = req.body;
   console.log("Fashion AI Request Received:", req.body);
 
   // Validate required fields
   if (!userImage || !clothingImage || !category) {
-    return res
-      .status(400)
-      .json({
-        error: "User image, clothing image, and category are required.",
-      });
+    return res.status(400).json({
+      error: "User image, clothing image, and category are required.",
+    });
   }
 
   // Configuration for Fashion AI API
   const data = JSON.stringify({
     model_image: userImage,
     garment_image: clothingImage,
-    category,
+    category: category,
   });
+
   const config = {
     method: "post",
     maxBodyLength: Infinity,
@@ -82,13 +116,76 @@ app.post("/api/fashion-ai", async (req, res) => {
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
-      "X-API-KEY": `Bearer ${process.env.FASHION_AI_API}`,
+      Authorization: `Bearer fa-TFLiAYCtn286-6sqfmFrekBX4o7Ailx1L7wry`,
     },
     data,
   };
 
-  // Handle the request
-  return handleApiRequest(config, res, "Fashion AI API Response:");
+  try {
+    // Initial API call to start the try-on process
+    const initialResponse = await axios.request(config);
+    console.log("Fashion AI Initial Response:", initialResponse.data);
+
+    // Check if the response contains an ID
+    if (initialResponse.data && initialResponse.data.id) {
+      const tryOnId = initialResponse.data.id;
+      console.log("Try-On ID:", tryOnId);
+
+      // Wait for the try-on status and result
+      const statusConfig = {
+        method: "get",
+        url: `https://api.fashn.ai/v1/status/${tryOnId}`,
+        headers: {
+          Authorization: `Bearer fa-TFLiAYCtn286-6sqfmFrekBX4o7Ailx1L7wry`,
+        },
+      };
+
+      // Polling mechanism: Retry until the status is complete or fails
+      const pollForResult = async () => {
+        let statusResponse;
+        while (true) {
+          console.log("Fetching status for Try-On ID:", tryOnId);
+          statusResponse = await axios.request(statusConfig);
+          console.log("Status Response:", statusResponse.data);
+
+          // Break if the status is successful or an error occurs
+          if (
+            statusResponse.data &&
+            statusResponse.data.status === "completed"
+          ) {
+            return statusResponse.data;
+          } else if (
+            statusResponse.data &&
+            statusResponse.data.status === "failed"
+          ) {
+            throw new Error("Try-On process failed.");
+          }
+
+          // Wait for 2 seconds before retrying
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+        }
+      };
+
+      // Poll for the result
+      const finalResult = await pollForResult();
+
+      // Return the result to the client
+      return res.status(200).json({ result: finalResult });
+    } else {
+      return res
+        .status(400)
+        .json({ error: "No Try-On ID returned from the API." });
+    }
+  } catch (error) {
+    console.error("Fashion AI API Error:", error.message);
+    if (error.response) {
+      console.error("Response Data:", error.response.data);
+      console.error("Response Status:", error.response.status);
+    }
+    return res
+      .status(500)
+      .json({ error: "Failed to process the request. Please try again." });
+  }
 });
 
 // Error Handler Middleware
@@ -97,4 +194,8 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "An unexpected error occurred." });
 });
 
-module.exports = app;
+// Server Startup Code
+const PORT = process.env.PORT || 8080; // Use environment variable PORT or default to 8080
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});
