@@ -92,7 +92,22 @@ app.post("/api/try-on", async (req, res) => {
 // });
 
 app.post("/api/fashion-ai", async (req, res) => {
-  const { userImage, clothingImage, category } = req.body;
+  const {
+    userImage,
+    clothingImage,
+    category,
+    nsfw_filter = true, // Default: true
+    cover_feet = false, // Default: false
+    adjust_hands = false, // Default: false
+    restore_background = false, // Default: false
+    restore_clothes = false, // Default: false
+    garment_photo_type = "auto", // Default: auto
+    long_top = false, // Default: false
+    mode = "balanced", // Default: balanced
+    seed = 42, // Default: 42
+    num_samples = 1, // Default: 1
+  } = req.body;
+
   console.log("Fashion AI Request Received:", req.body);
 
   // Validate required fields
@@ -102,13 +117,25 @@ app.post("/api/fashion-ai", async (req, res) => {
     });
   }
 
-  // Configuration for Fashion AI API
-  const data = JSON.stringify({
+  // Prepare the API payload
+  const data = {
     model_image: userImage,
     garment_image: clothingImage,
     category: category,
-  });
+    nsfw_filter: nsfw_filter,
+    cover_feet: cover_feet,
+    adjust_hands: adjust_hands,
+    restore_background: restore_background,
+    restore_clothes: restore_clothes,
+    garment_photo_type: garment_photo_type,
+    long_top: long_top,
+    mode: mode,
+    seed: seed,
+    num_samples: num_samples,
+  };
 
+  console.log('data >>', data)
+  // Configuration for Fashion AI API
   const config = {
     method: "post",
     maxBodyLength: Infinity,
@@ -116,9 +143,9 @@ app.post("/api/fashion-ai", async (req, res) => {
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
-      Authorization: `Bearer fa-TFLiAYCtn286-6sqfmFrekBX4o7Ailx1L7wry`,
+      Authorization: `Bearer fa-Gwlft13yj2Ad-MbSEDjAvzn7umjQ1Rn0GxiuM`,
     },
-    data,
+    data: JSON.stringify(data),
   };
 
   try {
