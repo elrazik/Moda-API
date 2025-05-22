@@ -153,6 +153,100 @@ app.post("/api/fashion-ai", async (req, res) => {
   }
 });
 
+app.post("/api/bitstudio", async (req, res) => {
+  const {
+    userImage, // person_image_id
+    clothingImage, // outfit_image_id
+    prompt,
+    resolution,
+    num_images,
+    ...optionalParams // Catch any extra dynamic inputs
+  } = req.body;
+
+  console.log("Bitstudio AI Request Received:", req.body);
+
+  // ✅ Validate required fields
+  if (!userImage || !clothingImage) {
+    return res.status(400).json({
+      error: "User image and clothing image are required.",
+    });
+  }
+
+  // 🧠 Prepare the API payload
+  const data = {
+    person_image_id: userImage,
+    outfit_image_id: clothingImage,
+    prompt: prompt || "",
+    resolution: resolution || "1024x1024",
+    num_images: num_images || 1,
+    ...optionalParams,
+  };
+
+  console.log("Data to Bitstudio API:", data);
+
+  const config = {
+    method: "post",
+    maxBodyLength: Infinity,
+    url: "https://api.bitstudio.ai/v1/virtual-try-on",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      Authorization: `Bearer ${bs_eG9efs5qH4CD1WdOixsELQ7FQ867nBA}`,
+    },
+    data: JSON.stringify(data),
+  };
+
+  try {
+    const initialResponse = await axios.request(config);
+    console.log("Bitstudio Initial Response:", initialResponse.data);
+
+    const tryOnId = initialResponse.data?.id;
+    if (!tryOnId) {
+      return res
+        .status(400)
+        .json({ error: "No Try-On ID returned from Bitstudio API." });
+    }
+
+    // 🌀 Polling for generation status
+    const statusConfig = {
+      method: "get",
+      url: `https://api.bitstudio.ai/v1/images/${tryOnId}`,
+      headers: {
+        Authorization: `Bearer ${BITSTUDIO_API_KEY}`,
+      },
+    };
+
+    const pollForResult = async () => {
+      let statusResponse;
+      while (true) {
+        console.log("Polling status for Try-On ID:", tryOnId);
+        statusResponse = await axios.request(statusConfig);
+        console.log("Status Response:", statusResponse.data);
+
+        if (statusResponse.data?.status === "completed") {
+          return statusResponse.data;
+        } else if (statusResponse.data?.status === "failed") {
+          throw new Error("Try-On process failed.");
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 2000)); // wait 2 seconds
+      }
+    };
+
+    const finalResult = await pollForResult();
+
+    return res.status(200).json({ result: finalResult });
+  } catch (error) {
+    console.error("Bitstudio API Error:", error.message);
+    if (error.response) {
+      console.error("Response Data:", error.response.data);
+      console.error("Response Status:", error.response.status);
+    }
+    return res.status(500).json({
+      error: "Failed to process the try-on request. Please try again.",
+    });
+  }
+});
 // Route 2: Fashion AI API
 // app.post("/api/fashion-ai", async (req, res) => {
 //   const { userImage, clothingImage, category } = req.body;
